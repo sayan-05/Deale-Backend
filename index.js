@@ -3,6 +3,7 @@ const app = express()
 const server = require("http").createServer(app)
 const mongoose = require('mongoose')
 const io = require("socket.io")(server)
+
 require("dotenv/config")
 
 
@@ -37,4 +38,4 @@ mongoose.connect(process.env.DB_CONNECTION, {
 
 
 
-server.listen(3000, () => console.log('Server is running'))
+server.listen(8000, () => console.log('Server is running'))
