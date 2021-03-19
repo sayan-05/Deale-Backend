@@ -17,19 +17,23 @@ const getRoute = require('./routes/get')
 
 app.use('/get', getRoute)
 
-io.on('connection', (client) => {
-    
-    console.log("Client connected")
-
-    client.on('join', (data) => {
-        console.log(data)
-    })
+io.use((socket, next) => {
+    if (!socket.handshake.query.token) return next(new Error("Authentication Error....Token Missing"))
+    try {
+        const verified = jwt.verify(token, process.env.TOKEN_SECRET)
+        socket.verified = verified
+        next()
+    } catch{
+        next(new Error("Authentication Error"))
+    }
+}).on("connection",(socket)=> {
+    console.log("Connected")
 })
 
 mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    useFindAndModify : false
+    useFindAndModify: false
 })
     .then(() => {
         console.log('MongoDB Connected…')

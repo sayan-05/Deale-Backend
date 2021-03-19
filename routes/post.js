@@ -49,7 +49,7 @@ router.post(
     body("email").isEmail(),
     body("password").isLength({ min: 4 }),
     async (req, res) => {
-
+        console.log("got")
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -64,7 +64,7 @@ router.post(
 
         const token = jwt.sign({_id : user._id},process.env.TOKEN_SECRET)
 
-        res.header('auth-token',token).send(token)
+        res.send(token)
 
     }
 )
@@ -82,7 +82,7 @@ router.post('/add-friend',auth , (req, res) => {
 })
 
 // Route for removing friend from friend list
-router.post('/remove-friend', (req, res) => {
+router.post('/remove-friend',auth , (req, res) => {
     User.findOneAndUpdate(
         { _id: req.body._id }, {
         $pull: {
