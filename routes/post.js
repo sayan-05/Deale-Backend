@@ -49,7 +49,6 @@ router.post(
     body("email").isEmail(),
     body("password").isLength({ min: 4 }),
     async (req, res) => {
-        console.log("got")
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });

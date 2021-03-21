@@ -3,6 +3,7 @@ const app = express()
 const server = require("http").createServer(app)
 const mongoose = require('mongoose')
 const io = require("socket.io")(server)
+const jwt = require('jsonwebtoken')
 
 require("dotenv/config")
 
@@ -17,17 +18,22 @@ const getRoute = require('./routes/get')
 
 app.use('/get', getRoute)
 
+//SOCKET.IO LOGIC
+
 io.use((socket, next) => {
-    if (!socket.handshake.query.token) return next(new Error("Authentication Error....Token Missing"))
-    try {
-        const verified = jwt.verify(token, process.env.TOKEN_SECRET)
-        socket.verified = verified
-        next()
-    } catch{
-        next(new Error("Authentication Error"))
+    if (socket.handshake.query && socket.handshake.query.token) {
+        jwt.verify(socket.handshake.query.token, process.env.TOKEN_SECRET, function (err, decoded) {
+            if (err) return next(new Error('Authentication error'));
+            socket.decoded = decoded;
+            next();
+        }
+        )
+    } else {
+        next(new Error('Authentication error...Token Not Found'))
     }
-}).on("connection",(socket)=> {
-    console.log("Connected")
+}
+).on("connection", (socket) => {
+    console.log(socket.decoded)
 })
 
 mongoose.connect(process.env.DB_CONNECTION, {
