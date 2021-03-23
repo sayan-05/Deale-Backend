@@ -22,18 +22,23 @@ app.use('/get', getRoute)
 
 io.use((socket, next) => {
     if (socket.handshake.query && socket.handshake.query.token) {
-        jwt.verify(socket.handshake.query.token, process.env.TOKEN_SECRET, function (err, decoded) {
-            if (err) return next(new Error('Authentication error'));
-            socket.decoded = decoded;
-            next();
+        try {
+            let decoded = jwt.verify(socket.handshake.query.token, process.env.TOKEN_SECRET)
+            socket.decoded = decoded
+            next()
+        } catch (error) {
+            next(new Error("Authentication Error"))
         }
-        )
+
     } else {
         next(new Error('Authentication error...Token Not Found'))
     }
 }
 ).on("connection", (socket) => {
     console.log(socket.decoded)
+    socket.on("disconnect", () => {
+        console.log("Disconnected")
+    })
 })
 
 mongoose.connect(process.env.DB_CONNECTION, {
