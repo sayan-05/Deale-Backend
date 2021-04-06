@@ -53,25 +53,25 @@ io.use((socket, next) => {
 }
 ).on("connection", (socket) => {
     let uniqueSocketId = socket.id
-    let publicUserId = socket.decoded.publicId
+    let userId = socket.decoded._id
 
-    activeUsers[uniqueSocketId] = publicUserId
+    activeUsers[uniqueSocketId] = userId
 
 
     socket.on("send-private-message", async (data) => {
 
-        const recieverPublicId = data.publicId
+        const recieverId = data.friendId
         const text = data.recvText
-        const isActive = Object.values(activeUsers).includes(recieverPublicId.toString())
+        const isActive = Object.values(activeUsers).includes(recieverId.toString())
         if (isActive) {
-            let recieverSocketId = Object.keys(activeUsers).find(key => activeUsers[key] === recieverPublicId)
+            let recieverSocketId = Object.keys(activeUsers).find(key => activeUsers[key] === recieverId)
             socket.to(recieverSocketId).emit("recieve-private-message", {
-                text: text, sender: publicUserId
+                text: text, sender: userId
             })
             const chatSave = PrivateChat(
                 {
-                    sender: ObjectId(publicUserId),
-                    reciever: ObjectId(recieverPublicId),
+                    sender: ObjectId(userId),
+                    reciever: ObjectId(recieverId),
                     text: text
                 }
             )
@@ -80,9 +80,9 @@ io.use((socket, next) => {
     })
 
     socket.on("disconnect", () => {
-        console.log(activeUsers)
         console.log("Disconnected")
         delete activeUsers[uniqueSocketId]
+        console.log(activeUsers) 
     })
 })
 

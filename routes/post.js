@@ -61,7 +61,7 @@ router.post(
         const validPass = bcrypt.compare(req.body.password, user.password)
         if (!validPass) return res.status(400).send("Invalid Password")
 
-        const token = jwt.sign({ _id: user._id, publicId: user.publicId }, process.env.TOKEN_SECRET)
+        const token = jwt.sign({ _id: user._id}, process.env.TOKEN_SECRET)
 
         res.send(token)
 
@@ -72,7 +72,7 @@ router.post('/add-friend', auth, (req, res) => {
     User.findOneAndUpdate(
         { _id: req.user._id }, {
         $addToSet: {
-            friends: ObjectID(req.body.friendPublicId)
+            friends: ObjectID(req.body.friendId)
         }
     }, (err, docs) => {
         res.send("Added to friend list")

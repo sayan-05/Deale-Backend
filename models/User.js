@@ -1,6 +1,5 @@
 const mongoose = require("mongoose")
-const crypto = require("crypto");
-const ObjectId = require("mongodb").ObjectID
+
 
 
 const UserSchema = mongoose.Schema(
@@ -25,13 +24,6 @@ const UserSchema = mongoose.Schema(
         joined: {
             type: Date,
             default: Date.now
-        },
-        publicId: {
-            type: mongoose.Schema.Types.ObjectId,
-            default: () => {
-                return ObjectId(crypto.randomBytes(12).toString("hex"))
-            },
-            unique: true
         },
         active: {
             type: Boolean,
