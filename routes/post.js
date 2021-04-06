@@ -2,7 +2,7 @@
 const express = require('express')
 const router = express.Router()
 const User = require('../models/User')
-const { ObjectID } = require("mongodb").ObjectID
+const ObjectID  = require("mongodb").ObjectID
 const bcrypt = require("bcrypt")
 const { body, validationResult } = require("express-validator")
 const jwt = require('jsonwebtoken')
@@ -61,18 +61,18 @@ router.post(
         const validPass = bcrypt.compare(req.body.password, user.password)
         if (!validPass) return res.status(400).send("Invalid Password")
 
-        const token = jwt.sign({_id : user._id},process.env.TOKEN_SECRET)
+        const token = jwt.sign({ _id: user._id, publicId: user.publicId }, process.env.TOKEN_SECRET)
 
         res.send(token)
 
     }
 )
 //Route for adding new friends
-router.post('/add-friend',auth , (req, res) => {
+router.post('/add-friend', auth, (req, res) => {
     User.findOneAndUpdate(
-        { _id: req.body._id }, {
+        { _id: req.user._id }, {
         $addToSet: {
-            friends: ObjectID(req.body.friend_id)
+            friends: ObjectID(req.body.friendPublicId)
         }
     }, (err, docs) => {
         res.send("Added to friend list")
@@ -81,7 +81,7 @@ router.post('/add-friend',auth , (req, res) => {
 })
 
 // Route for removing friend from friend list
-router.post('/remove-friend',auth , (req, res) => {
+router.post('/remove-friend', auth, (req, res) => {
     User.findOneAndUpdate(
         { _id: req.body._id }, {
         $pull: {
