@@ -20,7 +20,10 @@ const UserSchema = mongoose.Schema(
             type: String,
             required: true
         },
-        friends: [mongoose.Schema.Types.ObjectId],
+        friends: [{
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "User"
+        }],
         joined: {
             type: Date,
             default: Date.now

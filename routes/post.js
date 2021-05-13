@@ -2,12 +2,12 @@
 const express = require('express')
 const router = express.Router()
 const User = require('../models/User')
-const ObjectID  = require("mongodb").ObjectID
+const ObjectID = require("mongodb").ObjectID
 const bcrypt = require("bcrypt")
 const { body, validationResult } = require("express-validator")
 const jwt = require('jsonwebtoken')
 const auth = require('../middleware/auth')
-
+const PrivateChatCluster = require("../models/PrivateChatCluster")
 
 // Route for registering new users
 router.post(
@@ -61,28 +61,45 @@ router.post(
         const validPass = bcrypt.compare(req.body.password, user.password)
         if (!validPass) return res.status(400).send("Invalid Password")
 
-        const token = jwt.sign({ _id: user._id}, process.env.TOKEN_SECRET)
+        const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET)
 
         res.send(token)
 
     }
 )
 //Route for adding new friends
-router.post('/add-friend', auth, (req, res) => {
-    User.findOneAndUpdate(
-        { _id: req.user._id }, {
+router.post('/add-friend', auth, async (req, res) => {
+
+
+    await User.findOneAndUpdate(
+        {
+            _id: req.user._id
+        }, {
         $addToSet: {
-            friends: ObjectID(req.body.friendId)
+            friends: req.body.friendId
+        }
+    }
+    )
+    await User.findOneAndUpdate(
+        {
+            _id: req.body.friendId
+        }, {
+        $addToSet: {
+            friends: req.user._id
         }
     }, (err, docs) => {
         res.send("Added to friend list")
     }
     )
+    const chatCluster = PrivateChatCluster({
+        pair: [ObjectID(req.user._id), ObjectID(req.body.friendId)]
+    })
+    await chatCluster.save()
 })
 
 // Route for removing friend from friend list
-router.post('/remove-friend', auth, (req, res) => {
-    User.findOneAndUpdate(
+router.post('/remove-friend', auth, async (req, res) => {
+    await User.findOneAndUpdate(
         { _id: req.body._id }, {
         $pull: {
             friends: ObjectID(req.body.friend_id)

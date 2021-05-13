@@ -5,8 +5,9 @@ const mongoose = require('mongoose')
 const io = require("socket.io")(server)
 const jwt = require('jsonwebtoken')
 const PrivateChat = require("./models/PrivateChat")
+const User = require("./models/User")
 const ObjectId = require("mongodb").ObjectID
-
+const PrivateChatCluster = require("./models/PrivateChatCluster")
 require("dotenv/config")
 
 
@@ -16,10 +17,12 @@ const postRoute = require('./routes/post')
 
 app.use('/post', postRoute)
 
+
 const getRoute = require('./routes/get')
 const { constants } = require('buffer')
 
 app.use('/get', getRoute)
+
 
 // DATABASE
 mongoose.connect(process.env.DB_CONNECTION, {
@@ -51,38 +54,61 @@ io.use((socket, next) => {
         next(new Error('Authentication error...Token Not Found'))
     }
 }
-).on("connection", (socket) => {
+).on("connection", async (socket) => {
     let uniqueSocketId = socket.id
     let userId = socket.decoded._id
 
     activeUsers[uniqueSocketId] = userId
 
+    const friends = await User.findById({
+        _id : userId
+    }).select("friends -_id") 
+
+    socket.friends = friends.friends
+
 
     socket.on("send-private-message", async (data) => {
 
-        const recieverId = data.friendId
-        const text = data.recvText
+
+        const recieverId = data.recieverId
+        const chatObj = data.chatObj
         const isActive = Object.values(activeUsers).includes(recieverId.toString())
-        if (isActive) {
+        if (isActive && socket["friends"].includes(recieverId)) {
             let recieverSocketId = Object.keys(activeUsers).find(key => activeUsers[key] === recieverId)
             socket.to(recieverSocketId).emit("recieve-private-message", {
-                text: text, sender: userId
+                chatObj: chatObj, sender: userId
             })
-            const chatSave = PrivateChat(
+
+            const privateChat = PrivateChat({
+                _id : ObjectId(chatObj._id),
+                user : ObjectId(userId),
+                text : chatObj.text
+            })
+
+            await privateChat.save()
+
+            await PrivateChatCluster.findOneAndUpdate(
                 {
-                    sender: ObjectId(userId),
-                    reciever: ObjectId(recieverId),
-                    text: text
+                    pair : {
+                            $all : [userId,recieverId]
+                    }
+                },{
+                    $push : {
+                        chat : ObjectId(chatObj._id)
+                    }
                 }
-            )
-            await chatSave.save()
+            )  
+
+        } else {
+            console.log("Inactive")
         }
     })
+
 
     socket.on("disconnect", () => {
         console.log("Disconnected")
         delete activeUsers[uniqueSocketId]
-        console.log(activeUsers) 
+        console.log(activeUsers)
     })
 })
 

@@ -2,12 +2,12 @@ const mongoose = require("mongoose")
 
 
 
-const PrivateChatSchema = mongoose.Schema(
+const PrivateChatSchema = new mongoose.Schema(
     {
-        sender: mongoose.Schema.Types.ObjectId,
-        reciever: mongoose.Schema.Types.ObjectId,
+        _id: { type: mongoose.Schema.Types.ObjectId },
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         text: String,
-        time: {
+        createdAt: {
             type: Date,
             default: Date.now
         }
