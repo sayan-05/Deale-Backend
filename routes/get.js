@@ -27,7 +27,7 @@ router.get('/friends', auth, async (req, res) => {
     res.send(friends.friends)
 })
 
-router.get('/chats', auth, async (req, res) => {
+router.get('/private-chats', auth, async (req, res) => {
     let chatFriends = await PrivateChatCluster.find({
         pair: req.user._id,
         chat: {
