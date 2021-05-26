@@ -8,6 +8,8 @@ const PrivateChat = require("./models/PrivateChat")
 const User = require("./models/User")
 const ObjectId = require("mongodb").ObjectID
 const PrivateChatCluster = require("./models/PrivateChatCluster")
+const GroupChatCluster = require("./models/GroupChatCluster")
+const GroupChat = require("./models/GroupChat")
 require("dotenv/config")
 
 
@@ -61,11 +63,20 @@ io.use((socket, next) => {
     activeUsers[uniqueSocketId] = userId
 
     const friends = await User.findById({
-        _id : userId
-    }).select("friends -_id") 
+        _id: userId
+    }).select("friends -_id")
+
+    const groups = await GroupChatCluster.find({
+        members: userId
+    }).select("_id")
+
+    const groupsArray = groups.map(i => i._id)
 
     socket.friends = friends.friends
 
+    socket.groups = groupsArray
+
+    socket.join(groupsArray)
 
     socket.on("send-private-message", async (data) => {
 
@@ -80,28 +91,54 @@ io.use((socket, next) => {
             })
 
             const privateChat = PrivateChat({
-                _id : ObjectId(chatObj._id),
-                user : ObjectId(userId),
-                text : chatObj.text
+                _id: ObjectId(chatObj._id),
+                user: ObjectId(userId),
+                text: chatObj.text
             })
 
             await privateChat.save()
 
             await PrivateChatCluster.findOneAndUpdate(
                 {
-                    pair : {
-                            $all : [userId,recieverId]
+                    pair: {
+                        $all: [userId, recieverId]
                     }
-                },{
-                    $push : {
-                        chat : ObjectId(chatObj._id)
-                    }
+                }, {
+                $push: {
+                    chat: ObjectId(chatObj._id)
                 }
-            )  
+            }
+            )
 
         } else {
             console.log("Inactive")
         }
+    })
+
+    socket.on("send-group-message", async (data) => {
+        const groupId = data.groupId
+        const chatObj = data.chatObj
+
+        if (socket.groups.includes(groupId)) {
+            io.to(groupId).emit("recieve-group-message", {
+                groupId: groupId,
+                chatObj: chatObj
+            })
+            const groupChat = GroupChat({
+                _id: ObjectId(chatObj._id),
+                user: ObjectId(userId),
+                text: chatObj.text
+            })
+
+            await groupChat.save()
+
+            await GroupChatCluster.findByIdAndUpdate(groupId, {
+                $push : {
+                    chat : ObjectId(chatObj._id)
+                }
+            })
+        }
+
     })
 
 

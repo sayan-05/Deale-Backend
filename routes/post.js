@@ -8,6 +8,7 @@ const { body, validationResult } = require("express-validator")
 const jwt = require('jsonwebtoken')
 const auth = require('../middleware/auth')
 const PrivateChatCluster = require("../models/PrivateChatCluster")
+const GroupChatCluster = require("../models/GroupChatCluster")
 
 // Route for registering new users
 router.post(
@@ -110,6 +111,21 @@ router.post('/remove-friend', auth, async (req, res) => {
     )
 })
 
+router.post("/create-group",auth,async (req,res) => {
 
+    const members = req.body.members
+    members.push(req.user._id)
+
+    const GroupCluster = GroupChatCluster({
+        members : members,
+        admin : req.user._id,
+        chat : []
+    })
+
+    await GroupCluster.save((err,docs) => {
+        res.send(docs)
+    })        
+
+})
 
 module.exports = router

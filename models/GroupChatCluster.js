@@ -2,6 +2,10 @@ const mongoose = require("mongoose")
 
 const GroupChatClusterSchema = new mongoose.Schema(
     {
+        name : {
+            type : String,
+            required : true
+        },
         members: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

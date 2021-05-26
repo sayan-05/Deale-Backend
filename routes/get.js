@@ -3,7 +3,7 @@ const User = require('../models/User')
 const auth = require('../middleware/auth')
 const router = express.Router()
 const PrivateChatCluster = require("../models/PrivateChatCluster")
-
+const GroupChatCluster = require("../models/GroupChatCluster")
 router.get('/users', auth, async (req, res) => {
     let userFriends = await User.findById(req.user._id).select("friends -_id")
     userFriends = userFriends.friends
@@ -29,11 +29,7 @@ router.get('/friends', auth, async (req, res) => {
 
 router.get('/private-chats', auth, async (req, res) => {
     let chatFriends = await PrivateChatCluster.find({
-        pair: req.user._id,
-        chat: {
-            $exists: true,
-            $ne: []
-        }
+        pair: req.user._id
     })
         .select("pair chat")
         .populate("pair", "firstName lastName _id")
@@ -66,6 +62,12 @@ router.get('/private-chats', auth, async (req, res) => {
     res.send({chatFriends,userId})
 })
 
+router.get("/group-chats",auth , async (req,res) => {
+    const groupChats = await GroupChatCluster.find({
+        members : req.user._id
+    })
+    res.send(groupChats)
+})
 
 
 module.exports = router
