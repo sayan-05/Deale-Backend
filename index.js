@@ -70,7 +70,7 @@ io.use((socket, next) => {
         members: userId
     }).select("_id")
 
-    const groupsArray = groups.map(i => i._id)
+    const groupsArray = groups.map(i => String(i._id))
 
     socket.friends = friends.friends
 
@@ -119,8 +119,8 @@ io.use((socket, next) => {
         const groupId = data.groupId
         const chatObj = data.chatObj
 
-        if (socket.groups.includes(groupId)) {
-            io.to(groupId).emit("recieve-group-message", {
+        if (socket["groups"].includes(groupId)) {
+            socket.broadcast.to(groupId).emit("recieve-group-message", {
                 groupId: groupId,
                 chatObj: chatObj
             })
@@ -133,10 +133,12 @@ io.use((socket, next) => {
             await groupChat.save()
 
             await GroupChatCluster.findByIdAndUpdate(groupId, {
-                $push : {
-                    chat : ObjectId(chatObj._id)
+                $push: {
+                    chat: ObjectId(chatObj._id)
                 }
             })
+        } else {
+            console.log(typeof socket.groups[0])
         }
 
     })

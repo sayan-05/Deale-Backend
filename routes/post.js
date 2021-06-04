@@ -10,6 +10,8 @@ const auth = require('../middleware/auth')
 const PrivateChatCluster = require("../models/PrivateChatCluster")
 const GroupChatCluster = require("../models/GroupChatCluster")
 
+
+
 // Route for registering new users
 router.post(
     '/register',
@@ -111,20 +113,30 @@ router.post('/remove-friend', auth, async (req, res) => {
     )
 })
 
-router.post("/create-group",auth,async (req,res) => {
+router.post("/create-group", auth, async (req, res) => {
+
+    const checker = (arr, target) => target.every(v => arr.includes(v))
 
     const members = req.body.members
-    members.push(req.user._id)
+    const user = await User.findById(req.user._id).select("friends firstName lastName -_id")
+    if (checker(user["friends"], members)) {
+        members.push(req.user._id)
+        const GroupCluster = GroupChatCluster({
+            _id : ObjectID(),
+            name : req.body.name,
+            members: members,
+            admin: req.user._id,
+            chat: []
+        })
+        await GroupCluster.save()
 
-    const GroupCluster = GroupChatCluster({
-        members : members,
-        admin : req.user._id,
-        chat : []
-    })
+        const newCluster = await GroupChatCluster.findById(GroupCluster._id).select("-__v")
+        res.send(newCluster)
 
-    await GroupCluster.save((err,docs) => {
-        res.send(docs)
-    })        
+    } else {
+        res.send("Something went wrong")
+    }
+
 
 })
 

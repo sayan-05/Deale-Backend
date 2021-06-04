@@ -65,7 +65,21 @@ router.get('/private-chats', auth, async (req, res) => {
 router.get("/group-chats",auth , async (req,res) => {
     const groupChats = await GroupChatCluster.find({
         members : req.user._id
+    }).populate({
+        path : "chat",
+        select : '-__v',
+        options : {
+            sort : {
+                "createdAt":-1
+            }
+        },
+        populate : {
+            path : "user",
+            select : '_id'
+        }
     })
+    .select("-__v")
+
     res.send(groupChats)
 })
 
