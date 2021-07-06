@@ -23,7 +23,12 @@ const GroupChatClusterSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "GroupChat"
             }
-        ]
+        ],
+        avatar : {
+            type : String,
+            required : false,
+            default : null
+        }
     }
 )
 

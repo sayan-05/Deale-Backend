@@ -31,6 +31,11 @@ const UserSchema = mongoose.Schema(
         active: {
             type: Boolean,
             default: false
+        },
+        avatar : {
+            type : String,
+            required : false,
+            default : null           
         }
     }
 )

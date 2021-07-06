@@ -11,8 +11,6 @@ const PrivateChatCluster = require("./models/PrivateChatCluster")
 const GroupChatCluster = require("./models/GroupChatCluster")
 const GroupChat = require("./models/GroupChat")
 require("dotenv/config")
-
-
 app.use(express.json())
 
 const postRoute = require('./routes/post')
@@ -58,7 +56,7 @@ io.use((socket, next) => {
 }
 ).on("connection", async (socket) => {
     let uniqueSocketId = socket.id
-    let userId = socket.decoded._id
+    const userId = socket.decoded._id
 
     activeUsers[uniqueSocketId] = userId
 
@@ -104,14 +102,32 @@ io.use((socket, next) => {
                         $all: [userId, recieverId]
                     }
                 }, {
-                $push: {
+                $addToSet: {
                     chat: ObjectId(chatObj._id)
                 }
             }
             )
 
         } else {
-            console.log("Inactive")
+            const privateChat = PrivateChat({
+                _id: ObjectId(chatObj._id),
+                user: ObjectId(userId),
+                text: chatObj.text
+            })
+
+            await privateChat.save()
+
+            await PrivateChatCluster.findOneAndUpdate(
+                {
+                    pair: {
+                        $all: [userId, recieverId]
+                    }
+                }, {
+                $addToSet: {
+                    chat: ObjectId(chatObj._id)
+                }
+            }
+            )
         }
     })
 
@@ -133,14 +149,11 @@ io.use((socket, next) => {
             await groupChat.save()
 
             await GroupChatCluster.findByIdAndUpdate(groupId, {
-                $push: {
+                $addToSet: {
                     chat: ObjectId(chatObj._id)
                 }
             })
-        } else {
-            console.log(typeof socket.groups[0])
         }
-
     })
 
 

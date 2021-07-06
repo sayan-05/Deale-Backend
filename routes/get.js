@@ -4,7 +4,9 @@ const auth = require('../middleware/auth')
 const router = express.Router()
 const PrivateChatCluster = require("../models/PrivateChatCluster")
 const GroupChatCluster = require("../models/GroupChatCluster")
-router.get('/users', auth, async (req, res) => {
+
+
+router.get('/people', auth, async (req, res) => {
     let userFriends = await User.findById(req.user._id).select("friends -_id")
     userFriends = userFriends.friends
     userFriends.push(req.user._id)
@@ -14,7 +16,7 @@ router.get('/users', auth, async (req, res) => {
             _id: {
                 $nin: userFriends
             },
-        }).select("firstName lastName _id")
+        }).select("firstName lastName _id avatar")
     res.send(data)
 })
 
@@ -23,7 +25,7 @@ router.get('/friends', auth, async (req, res) => {
         {
             _id: req.user._id
         }
-    ).populate("friends", "firstName lastName _id").select("friends -_id")
+    ).populate("friends", "firstName lastName _id avatar").select("friends -_id")
     res.send(friends.friends)
 })
 
@@ -32,7 +34,7 @@ router.get('/private-chats', auth, async (req, res) => {
         pair: req.user._id
     })
         .select("pair chat")
-        .populate("pair", "firstName lastName _id")
+        .populate("pair", "firstName lastName _id avatar")
         .populate({
             path : "chat",
             select : '-__v',
