@@ -36,51 +36,54 @@ router.get('/private-chats', auth, async (req, res) => {
         .select("pair chat")
         .populate("pair", "firstName lastName _id avatar")
         .populate({
-            path : "chat",
-            select : '-__v',
-            options : {
-                sort : {
-                    "createdAt":-1
+            path: "chat",
+            select: '-__v',
+            options: {
+                sort: {
+                    "createdAt": -1
                 }
             },
-            populate : {
-                path : "user",
-                select : '_id'
+            populate: {
+                path: "user",
+                select: '_id'
             }
         })
 
 
     chatFriends.forEach((i) => {
-        i.pair.forEach((j,index) => {
-            if (j._id == req.user._id){
-                i.pair.splice(index,1)
+        i.pair.forEach((j, index) => {
+            if (j._id == req.user._id) {
+                i.pair.splice(index, 1)
             }
-        } )
+        })
     })
 
     let userId = req.user._id
 
 
-    res.send({chatFriends,userId})
+    res.send({ chatFriends, userId })
 })
 
-router.get("/group-chats",auth , async (req,res) => {
+router.get("/group-chats", auth, async (req, res) => {
     const groupChats = await GroupChatCluster.find({
-        members : req.user._id
+        members: req.user._id
     }).populate({
-        path : "chat",
-        select : '-__v',
-        options : {
-            sort : {
-                "createdAt":-1
+        path: "chat",
+        select: '-__v',
+        options: {
+            sort: {
+                "createdAt": -1
             }
         },
-        populate : {
-            path : "user",
-            select : '_id'
+        populate: {
+            path: "user",
+            select: '_id'
         }
+    }).populate({
+        path: "members",
+        select : '_id firstName lastName avatar'
     })
-    .select("-__v")
+        .select("-__v")
 
     res.send(groupChats)
 })

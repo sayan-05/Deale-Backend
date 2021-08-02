@@ -76,6 +76,7 @@ io.use((socket, next) => {
 
     socket.join(groupsArray)
 
+
     socket.on("send-private-message", async (data) => {
 
 
@@ -156,6 +157,47 @@ io.use((socket, next) => {
         }
     })
 
+    socket.on("remove-from-group", async (data) => {
+        const removedId = data.removedId
+        const groupId = data.groupId
+        const removedSocketId = Object.keys(activeUsers).find(key => activeUsers[key] === removedId)
+        const isAdmin = await GroupChatCluster.find({
+            _id: groupId,
+            admin: userId
+        }).countDocuments()
+        if (isAdmin === 1) {
+            const removedSocketInstance = await io.in(removedSocketId).fetchSockets()
+            const removedUser = await User.findById(removedSocketInstance[0]["decoded"]._id).select("-_id firstName lastName")
+            const groupChat = GroupChat({
+                _id: ObjectId(),
+                text: `${removedUser["firstName"]} ${removedUser["lastName"]} was removed by Admin`,
+                system : true
+            })
+
+            await groupChat.save()
+
+            const removalSysMsg = await GroupChat.findById(groupChat._id).select("-__v")
+
+            socket.in(groupId).emit("mem-removed-from-group", {
+                groupId: groupId,
+                chatObj: removalSysMsg
+            })
+
+            removedSocketInstance[0]["groups"] = removedSocketInstance[0]["groups"].filter(i => i != groupId)
+
+            await GroupChatCluster.findByIdAndUpdate(groupId,{
+                $pull : {
+                    members : removedId
+                }
+            })
+
+            await GroupChatCluster.findByIdAndUpdate(groupId, {
+                $addToSet: {
+                    chat: ObjectId(groupChat._id)
+                }
+            })
+        }
+    })
 
     socket.on("disconnect", () => {
         console.log("Disconnected")
@@ -165,7 +207,6 @@ io.use((socket, next) => {
 })
 
 
-
-
 server.listen(8000, () => console.log('Server is running'))
+
 
